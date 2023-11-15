@@ -8,3 +8,8 @@
 **/node_modules
 # misc
 **/.DS_Store
+
+#Hardhat files
+cache
+artifacts
+hardhat.config.js
