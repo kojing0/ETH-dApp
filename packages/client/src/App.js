@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import './App.css'
+import { ethers } from "ethers";
+import abi from "./utils/WavePortal.json"
 const App = () => {
   const [currentAcount, setCurrentAcount] = useState("");
+  const contractAddress = "0x71d4B2Eecd675Cd472d3C8192aF2ACBe640A24eC"
   console.log("current acount: ", currentAcount);
+  const contractABI = abi.abi;
   const checkIfWalletIsConnected = async () => {
     try {
       // window.ethereumにアクセスできることを確認
@@ -44,7 +48,36 @@ const App = () => {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
+  const wave = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer,
+        )
+        let count = await wavePortalContract.getTotalWaves();
+        console.log("Retrieved total wave count...", count.toNumber());
+        console.log("Signer:", signer);
+        // コントラクトに書き込む
+        const waveTxn = await wavePortalContract.wave();
+        console.log("Mining...", waveTxn.hash);
+        await waveTxn.wait();
+        console.log("Mining...", waveTxn.hash);
+        count = await wavePortalContract.getTotalWaves();
+        console.log("Retrieved total wave count...", count.toNumber());
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  };
+
   // Webページがロードされたときに関数を実行
   useEffect(() => { checkIfWalletIsConnected(); }, []);
   return (
@@ -60,7 +93,7 @@ const App = () => {
           (Wave)を送ってください
           <span role="img" aria-label="shine">✨</span>
         </div>
-        <button className="waveButton" onClick={null}>
+        <button className="waveButton" onClick={wave}>
           Wave at me
         </button>
         {/* {ウオレット接続のボタンを実装} */}
