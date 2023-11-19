@@ -7,6 +7,75 @@ const App = () => {
   const contractAddress = "0x71d4B2Eecd675Cd472d3C8192aF2ACBe640A24eC"
   console.log("current acount: ", currentAcount);
   const contractABI = abi.abi;
+
+  // waveを保存する関数を定義
+  const [allWaves, setAllWaves] = useState([]);
+  const getAllWaves = async () => {
+    const { ethereum } = window;
+
+    try {
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+        // コントラクトからgetAllWavesを呼び出す
+        const wave = await wavePortalContract.getAllWaves();
+        const wavesCleaned = waves.map((wave) => {
+          return {
+            address: wave.waver,
+            timestamp: new Date(wave.timestamp * 1000),
+            message: wave.message,
+          };
+        });
+        setAllWaves(wavesCleaned);
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // emitされたイベントに反応する
+  useEffect(() => {
+    let wavePortalContract;
+
+    const onNewWave = (from, timestamp, message) => {
+      console.log("NewWave", from, timestamp, message);
+      setAllWaves((prevState) => [
+        ...prevState,
+        {
+          address: from,
+          timestamp: new Date(timestamp * 1000),
+          message: message
+        },
+      ]);
+    };
+    /* NewWaveイベントがコントラクトから発信されたときに、情報を受け取ります */
+    if (window.ethereum) {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      wavePortalContract = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        signer
+      );
+      wavePortalContract.on("NewWave", onNewWave);
+
+      /*メモリリークを防ぐために、NewWaveのイベントを解除します*/
+      return () => {
+        if (wavePortalContract) {
+          wavePortalContract.off("NewWave", onNewWave);
+        }
+      };
+    }
+  }, [])
+
+
   const checkIfWalletIsConnected = async () => {
     try {
       // window.ethereumにアクセスできることを確認
