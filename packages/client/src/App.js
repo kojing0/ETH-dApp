@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from "react";
-import './App.css'
 import { ethers } from "ethers";
-import abi from "./utils/WavePortal.json"
-const App = () => {
-  const [currentAcount, setCurrentAcount] = useState("");
-  const contractAddress = "0x71d4B2Eecd675Cd472d3C8192aF2ACBe640A24eC"
-  console.log("current acount: ", currentAcount);
-  const contractABI = abi.abi;
+import React, { useEffect, useState } from "react";
 
+import './App.css'
+
+import abi from "./utils/WavePortal.json"
+
+const App = () => {
+  const [currentAccount, setCurrentAccount] = useState("");
+  const [messageValue, setMessageValue] = useState("");
   // waveを保存する関数を定義
   const [allWaves, setAllWaves] = useState([]);
+  console.log("current acount: ", currentAccount);
+
+  const contractAddress = "0x87C8d2175d9F0CfD4A9d4f24C990cabdc2192c15"
+  const contractABI = abi.abi;
+
   const getAllWaves = async () => {
     const { ethereum } = window;
 
@@ -23,7 +28,7 @@ const App = () => {
           signer
         );
         // コントラクトからgetAllWavesを呼び出す
-        const wave = await wavePortalContract.getAllWaves();
+        const waves = await wavePortalContract.getAllWaves();
         const wavesCleaned = waves.map((wave) => {
           return {
             address: wave.waver,
@@ -91,7 +96,7 @@ const App = () => {
       if (accounts.length !== 0) {
         const account = accounts[0];
         console.log("Found an authorized account:", account);
-        setCurrentAcount(account)
+        setCurrentAccount(account)
       } else {
         console.log("No authorized account found")
       }
@@ -113,7 +118,7 @@ const App = () => {
         method: "eth_requestAccounts",
       });
       console.log("connected: ", accounts[0])
-      setCurrentAcount(accounts[0])
+      setCurrentAccount(accounts[0])
     } catch (error) {
       console.log(error);
     }
@@ -133,7 +138,7 @@ const App = () => {
         console.log("Retrieved total wave count...", count.toNumber());
         console.log("Signer:", signer);
         // コントラクトに書き込む
-        const waveTxn = await wavePortalContract.wave();
+        const waveTxn = await wavePortalContract.wave(messageValue, { gasLimit: 300000 });
         console.log("Mining...", waveTxn.hash);
         await waveTxn.wait();
         console.log("Mining...", waveTxn.hash);
@@ -165,13 +170,29 @@ const App = () => {
         <button className="waveButton" onClick={wave}>
           Wave at me
         </button>
+        {currentAccount && (
+          <textarea name="messageArea" placeholder="メッセージはこちら" type="text" id="massage" value={messageValue} onChange={(e) => setMessageValue(e.target.value)} />
+        )}
+        {currentAccount && (
+          allWaves.slice(0).reverse().map(
+            (wave, index) => {
+              return (
+                <div key={index} style={{ backgroundColor: '#F8F8FF', marginTop: "16px", padding: "8px" }}>
+                  <div>Address: {wave.address}</div>
+                  <div>Time: {wave.timestamp.toString()}</div>
+                  <div>Message: {wave.message}</div>
+                </div>
+              )
+            }
+          )
+        )}
         {/* {ウオレット接続のボタンを実装} */}
-        {!currentAcount && (
+        {!currentAccount && (
           <button className="waveButton" onClick={connectWallet}>
             Connect Wallet
           </button>
         )}
-        {currentAcount && (
+        {currentAccount && (
           <button className="waveButton" onClick={connectWallet}>
             Wallet Connected
           </button>
